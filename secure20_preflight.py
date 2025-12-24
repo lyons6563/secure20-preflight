@@ -390,14 +390,22 @@ def write_exception_csv(exceptions: List[Dict], output_path: Path) -> None:
         'catch_up_amount',
         'catch_up_type',
         'pay_period_start',
-        'pay_period_end'
+        'pay_period_end',
+        'severity'
     ]
     
     try:
         with open(output_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(exceptions)
+            
+            # Add severity to each exception
+            for exc in exceptions:
+                if exc['violation_type'] == 'ROTH_ONLY_CATCHUP_HCE':
+                    exc['severity'] = 'RED'
+                else:
+                    exc['severity'] = 'YELLOW'
+                writer.writerow(exc)
     except IOError as e:
         print(f"Error: Cannot write exception CSV file: {e}", file=sys.stderr)
         sys.exit(2)
@@ -478,6 +486,18 @@ Examples:
         # Count actual violations (exclude informational POTENTIAL_HCE)
         actual_violations = [v for v in violations if v['violation_type'] == 'ROTH_ONLY_CATCHUP_HCE']
         violation_count = len(actual_violations)
+        potential_count = len(potential_hces)
+        
+        # Determine traffic-light status
+        if violation_count > 0:
+            status = "RED"
+            exit_code = 2
+        elif potential_count > 0:
+            status = "YELLOW"
+            exit_code = 0
+        else:
+            status = "GREEN"
+            exit_code = 0
         
         # Create timestamped output directory
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -489,11 +509,15 @@ Examples:
         write_exception_csv(violations, output_csv_path)
         
         # Print results
-        if violation_count > 0:
-            print("NOT SAFE", file=sys.stdout)
-            print(f"Violations: {violation_count}", file=sys.stdout)
-            
-            # Get top 10 employee IDs with violations (prioritize actual violations)
+        print(f"STATUS: {status}", file=sys.stdout)
+        print(f"Violations: {violation_count}", file=sys.stdout)
+        if potential_count > 0:
+            print(f"Potential Issues: {potential_count}", file=sys.stdout)
+        else:
+            print(f"Potential Issues: 0", file=sys.stdout)
+        
+        # Get top 10 employee IDs (only for RED or YELLOW)
+        if status in ["RED", "YELLOW"]:
             employee_ids = [v['employee_id'] for v in actual_violations]
             # Add potential HCE IDs if we have fewer than 10
             if len(employee_ids) < 10:
@@ -504,14 +528,9 @@ Examples:
             top_10 = employee_ids[:10]
             if top_10:
                 print(f"Top employee IDs: {', '.join(top_10)}", file=sys.stdout)
-            
-            print(f"Output: {output_csv_path}", file=sys.stdout)
-            sys.exit(2)  # NOT SAFE
-        else:
-            print("SAFE", file=sys.stdout)
-            print(f"Violations: {violation_count}", file=sys.stdout)
-            print(f"Output: {output_csv_path}", file=sys.stdout)
-            sys.exit(0)  # SAFE
+        
+        print(f"Output: {output_csv_path}", file=sys.stdout)
+        sys.exit(exit_code)
             
     except KeyboardInterrupt:
         print("\nError: Interrupted by user", file=sys.stderr)

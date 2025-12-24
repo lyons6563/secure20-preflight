@@ -25,16 +25,35 @@ python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config
 ### Output
 
 The tool outputs:
-- **Console summary**: `SAFE` (0 enforceable violations) or `NOT SAFE` (violations detected), violation count, top employee IDs, and output file path
-- **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv`
-- **SAFE status** means 0 `ROTH_ONLY_CATCHUP_HCE` violations (enforceable Roth catch-up violations)
-- The exceptions CSV may include informational rows (e.g., `POTENTIAL_HCE`) even when status is SAFE
-- Violation count reflects only enforceable violations, not informational findings
+- **Console summary**: Traffic-light status (GREEN/YELLOW/RED), violation count, potential issues count, top employee IDs (if applicable), and output file path
+- **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv` with a `severity` column (RED or YELLOW)
+
+#### Traffic-Light Status
+
+- **GREEN**: Nothing to review. No violations and no potential risk flags.
+- **YELLOW**: Review recommended. Zero enforceable violations, but potential risk flags exist (e.g., `POTENTIAL_HCE`). The CSV may contain YELLOW findings even when there are 0 violations.
+- **RED**: Action required. At least one enforceable violation detected (e.g., `ROTH_ONLY_CATCHUP_HCE`).
 
 ### Exit Codes
 
-- `0`: SAFE (no violations detected)
-- `2`: NOT SAFE (violations detected) or Error (invalid inputs, file read errors, etc.)
+- `0`: GREEN or YELLOW status (no enforceable violations)
+- `2`: RED status (enforceable violations detected) or Error (invalid inputs, file read errors, etc.)
+
+## Drop-Folder Mode
+
+For automated processing without manual command-line execution:
+
+1. **Drop payroll CSV** into the `inbox/` folder
+2. **Double-click** `START_PRECHECKER.bat` to start the watcher
+3. **View results** in `preflight_outputs/<timestamp>/` folder
+
+The watcher automatically:
+- Processes each new CSV file in `inbox/`
+- Moves successfully processed files to `processed/`
+- Moves failed files to `failed/`
+- Creates a `run_summary.txt` in each output folder with processing details
+
+Press Ctrl+C in the watcher window to stop monitoring.
 
 ## Documentation
 
