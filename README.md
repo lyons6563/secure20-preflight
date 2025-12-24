@@ -25,8 +25,11 @@ python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config
 ### Output
 
 The tool outputs:
-- **Console summary**: `SAFE` (no violations) or `NOT SAFE` (violations detected), violation count, top employee IDs, and output file path
-- **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv` with detailed report of all detected violations and potential HCEs (headers only if no exceptions found)
+- **Console summary**: `SAFE` (0 enforceable violations) or `NOT SAFE` (violations detected), violation count, top employee IDs, and output file path
+- **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv`
+- **SAFE status** means 0 `ROTH_ONLY_CATCHUP_HCE` violations (enforceable Roth catch-up violations)
+- The exceptions CSV may include informational rows (e.g., `POTENTIAL_HCE`) even when status is SAFE
+- Violation count reflects only enforceable violations, not informational findings
 
 ### Exit Codes
 
