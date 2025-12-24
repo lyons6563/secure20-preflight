@@ -1,0 +1,5 @@
+employee_id,employee_name,pay_period_start,pay_period_end,gross_pay,ytd_gross_pay,age,catch_up_elected
+E001,Alex Carter,2024-06-01,2024-06-14,3500,78000,45,false
+E002,Jordan Smith,2024-06-01,2024-06-14,3200,70000,42,false
+E003,Taylor Nguyen,2024-06-01,2024-06-14,1800,34000,35,false
+E004,Chris Walker,2024-06-01,2024-06-14,2800,58000,52,true
