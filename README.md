@@ -14,26 +14,24 @@ The SECURE 2.0 Preflight Checker analyzes payroll data to detect:
 ### Example Command
 
 ```bash
-python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config configs/secure20_preflight_config.example.yaml --output exceptions.csv
+python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config configs/secure20_preflight_config.example.yaml
 ```
 
 ### Required Arguments
 
 - `--payroll` / `-p`: Path to payroll CSV file (required)
 - `--config` / `-c`: Path to YAML configuration file (required)
-- `--output` / `-o`: Path to exception CSV output file (optional, default: `exceptions.csv`)
 
 ### Output
 
 The tool outputs:
-- **Console result**: `SAFE` (no violations) or `NOT SAFE` (violations detected)
-- **Exception CSV**: Detailed report of all detected violations and potential HCEs
+- **Console summary**: `SAFE` (no violations) or `NOT SAFE` (violations detected), violation count, top employee IDs, and output file path
+- **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv` with detailed report of all detected violations and potential HCEs (headers only if no exceptions found)
 
 ### Exit Codes
 
 - `0`: SAFE (no violations detected)
-- `1`: NOT SAFE (violations detected)
-- `2`: Error (invalid inputs, file read errors, etc.)
+- `2`: NOT SAFE (violations detected) or Error (invalid inputs, file read errors, etc.)
 
 ## Documentation
 

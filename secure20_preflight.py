@@ -479,9 +479,14 @@ Examples:
         actual_violations = [v for v in violations if v['violation_type'] == 'ROTH_ONLY_CATCHUP_HCE']
         violation_count = len(actual_violations)
         
-        # Write exception CSV if any exceptions found
-        if violations:
-            write_exception_csv(violations, output_path)
+        # Create timestamped output directory
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        output_dir = Path('preflight_outputs') / timestamp
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Always write exception CSV (even if empty)
+        output_csv_path = output_dir / 'secure20_preflight_exceptions.csv'
+        write_exception_csv(violations, output_csv_path)
         
         # Print results
         if violation_count > 0:
@@ -500,9 +505,12 @@ Examples:
             if top_10:
                 print(f"Top employee IDs: {', '.join(top_10)}", file=sys.stdout)
             
+            print(f"Output: {output_csv_path}", file=sys.stdout)
             sys.exit(2)  # NOT SAFE
         else:
             print("SAFE", file=sys.stdout)
+            print(f"Violations: {violation_count}", file=sys.stdout)
+            print(f"Output: {output_csv_path}", file=sys.stdout)
             sys.exit(0)  # SAFE
             
     except KeyboardInterrupt:
