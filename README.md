@@ -1,4 +1,5 @@
 # SECURE 2.0 Preflight Checker
+NOTE: This tool flags *risk* based on payroll data; it does not render legal determinations.
 
 A command-line tool that performs preliminary compliance checks on payroll data to identify potential SECURE 2.0 Act violations before they occur. This MVP focuses exclusively on Phase 1 checks related to Highly Compensated Employee (HCE) catch-up contribution rules.
 
