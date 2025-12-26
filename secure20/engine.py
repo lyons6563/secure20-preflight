@@ -230,7 +230,7 @@ def write_exception_csv(exceptions: List[Dict], output_path: Path) -> None:
         sys.exit(2)
 
 
-def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List[Dict]] = None) -> Tuple[str, int, List[Dict], int, int]:
+def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List[Dict]] = None, config_path: Optional[str] = None) -> Tuple[str, int, List[Dict], int, int, Dict]:
     """
     Run the preflight engine with all rules.
     
@@ -238,34 +238,65 @@ def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List
         payroll_data: List of payroll records
         config: Configuration dictionary
         hours_data: Optional list of hours history records
+        config_path: Optional path to config file (for diagnostics)
         
     Returns:
-        Tuple of (status, exit_code, all_findings, violation_count, potential_count)
+        Tuple of (status, exit_code, all_findings, violation_count, potential_count, diagnostics)
     """
+    # Initialize diagnostics
+    diagnostics = {
+        'config_path': config_path or 'unknown',
+        'roth_catchup_enabled': True,  # Always enabled
+        'auto_enroll_enabled': config.get('auto_enroll_enabled', False),
+        'ltpt_enabled': config.get('ltpt_enabled', False),
+        'hours_file_present': hours_data is not None and len(hours_data) > 0,
+        'rules_executed': [],
+        'rules_skipped': {}
+    }
+    
     # Apply all rules
     all_findings = []
     
-    # Rule 1: Roth-only catch-up requirement (RED findings)
+    # Rule 1: Roth-only catch-up requirement (RED findings) - Always executed
     roth_violations = roth_catchup.check_roth_only_catchup_hce(payroll_data, config)
     all_findings.extend(roth_violations)
+    diagnostics['rules_executed'].append('RothCatchup')
     
-    # Rule 2: Potential HCE detection (YELLOW findings)
+    # Rule 2: Potential HCE detection (YELLOW findings) - Always executed
     potential_hces = roth_catchup.check_potential_hce(payroll_data, config)
     all_findings.extend(potential_hces)
+    if 'RothCatchup' not in diagnostics['rules_executed']:
+        diagnostics['rules_executed'].append('RothCatchup')  # Already added, but ensure it's there
     
     # Rule 3: Auto-enrollment and escalation checks
-    auto_enroll_misses = auto_enroll.check_auto_enroll_miss(payroll_data, config)
-    all_findings.extend(auto_enroll_misses)
-    
-    auto_enroll_below_default = auto_enroll.check_auto_enroll_below_default(payroll_data, config)
-    all_findings.extend(auto_enroll_below_default)
-    
-    escalation_misses = auto_enroll.check_escalation_miss(payroll_data, config)
-    all_findings.extend(escalation_misses)
+    if diagnostics['auto_enroll_enabled']:
+        # Check if required columns are present
+        if auto_enroll.check_auto_enroll_required_columns(payroll_data):
+            auto_enroll_misses = auto_enroll.check_auto_enroll_miss(payroll_data, config)
+            all_findings.extend(auto_enroll_misses)
+            
+            auto_enroll_below_default = auto_enroll.check_auto_enroll_below_default(payroll_data, config)
+            all_findings.extend(auto_enroll_below_default)
+            
+            escalation_misses = auto_enroll.check_escalation_miss(payroll_data, config)
+            all_findings.extend(escalation_misses)
+            
+            diagnostics['rules_executed'].append('AutoEnroll')
+        else:
+            diagnostics['rules_skipped']['AutoEnroll'] = 'required columns missing (hire_date, deferral_rate, deferral_start_date)'
+    else:
+        diagnostics['rules_skipped']['AutoEnroll'] = 'disabled in config'
     
     # Rule 4: LTPT eligibility check (YELLOW findings)
-    ltpt_findings = ltpt.check_ltpt_eligibility(payroll_data, hours_data, config)
-    all_findings.extend(ltpt_findings)
+    if diagnostics['ltpt_enabled']:
+        if diagnostics['hours_file_present']:
+            ltpt_findings = ltpt.check_ltpt_eligibility(payroll_data, hours_data, config)
+            all_findings.extend(ltpt_findings)
+            diagnostics['rules_executed'].append('LTPT')
+        else:
+            diagnostics['rules_skipped']['LTPT'] = 'hours_history.csv not found'
+    else:
+        diagnostics['rules_skipped']['LTPT'] = 'disabled in config'
     
     # Count actual violations (RED findings: ROTH_ONLY_CATCHUP_HCE, AUTO_ENROLL_MISS)
     actual_violations = [v for v in all_findings if v['violation_type'] in ['ROTH_ONLY_CATCHUP_HCE', 'AUTO_ENROLL_MISS']]
@@ -284,5 +315,5 @@ def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List
         status = "GREEN"
         exit_code = 0
     
-    return status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces
+    return status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces, diagnostics
 

@@ -60,6 +60,10 @@ The watcher automatically:
 
 Press Ctrl+C in the watcher window to stop monitoring.
 
+## Diagnostics
+
+At the end of each run, the tool prints diagnostics showing which checks executed and which were skipped, along with reasons for skipped checks. This helps you understand why certain rules didn't run (e.g., missing hours file for LTPT, disabled in config, missing required columns).
+
 ## Documentation
 
 For complete specification and details, see [docs/SECURE20_PREFLIGHT_MVP.md](docs/SECURE20_PREFLIGHT_MVP.md).

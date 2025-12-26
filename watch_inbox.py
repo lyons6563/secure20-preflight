@@ -126,6 +126,8 @@ def process_file(csv_file: Path):
         if hours_file_exists:
             cmd.extend(['--hours', str(HOURS_PATH)])
         
+        # Note: config_path is passed via --config flag, which secure20_preflight.py will use
+        
         result = subprocess.run(
             cmd,
             capture_output=True,

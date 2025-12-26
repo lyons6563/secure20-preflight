@@ -178,7 +178,9 @@ Examples:
             hours_data = load_hours_history(hours_path)
         
         # Run engine with all rules
-        status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces = run_engine(payroll_data, config, hours_data)
+        status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces, diagnostics = run_engine(
+            payroll_data, config, hours_data, str(config_path)
+        )
         
         # Create timestamped output directory (includes milliseconds for uniqueness)
         now = datetime.now()
@@ -209,6 +211,19 @@ Examples:
                 print(f"Top employee IDs: {', '.join(top_10)}", file=sys.stdout)
         
         print(f"Output: {output_csv_path}", file=sys.stdout)
+        
+        # Print diagnostics
+        print("", file=sys.stdout)
+        print("=== DIAGNOSTICS ===", file=sys.stdout)
+        print(f"Config file used: {diagnostics['config_path']}", file=sys.stdout)
+        if diagnostics['rules_executed']:
+            print(f"Rules executed: {', '.join(diagnostics['rules_executed'])}", file=sys.stdout)
+        if diagnostics['rules_skipped']:
+            print("Rules skipped:", file=sys.stdout)
+            for rule, reason in diagnostics['rules_skipped'].items():
+                print(f"  - {rule}: {reason}", file=sys.stdout)
+        print("===================", file=sys.stdout)
+        
         sys.exit(exit_code)
             
     except KeyboardInterrupt:
