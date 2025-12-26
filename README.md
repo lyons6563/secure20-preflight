@@ -8,6 +8,7 @@ A command-line tool that performs preliminary compliance checks on payroll data 
 The SECURE 2.0 Preflight Checker analyzes payroll data to detect:
 - **Roth-only catch-up risk for HCEs**: Identifies Highly Compensated Employees making catch-up contributions exclusively to Roth accounts (prohibited under SECURE 2.0)
 - **Potential HCE detection**: Flags employees who may become HCEs based on projected annual compensation
+- **LTPT eligibility**: Identifies employees who may be eligible for Long-Term Part-Time status based on hours worked in consecutive years (requires `--hours` CSV file)
 
 ## Quick Start
 
@@ -21,6 +22,10 @@ python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config
 
 - `--payroll` / `-p`: Path to payroll CSV file (required)
 - `--config` / `-c`: Path to YAML configuration file (required)
+
+### Optional Arguments
+
+- `--hours` / `-hhrs`: Path to hours history CSV file (optional, enables LTPT eligibility checks)
 
 ### Output
 

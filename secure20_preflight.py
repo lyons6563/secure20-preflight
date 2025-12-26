@@ -130,6 +130,13 @@ Examples:
     )
     
     parser.add_argument(
+        "--hours", "-hhrs",
+        type=str,
+        default=None,
+        help="Path to hours history CSV file (optional, enables LTPT eligibility checks)"
+    )
+    
+    parser.add_argument(
         "--version", "-v",
         action="version",
         version="SECURE 2.0 Preflight Checker 1.0.0"
@@ -141,6 +148,7 @@ Examples:
     payroll_path = Path(args.payroll)
     config_path = Path(args.config)
     output_path = Path(args.output)
+    hours_path = Path(args.hours) if args.hours else None
     
     if not payroll_path.exists():
         print(f"Error: Payroll file not found: {payroll_path}", file=sys.stderr)
@@ -150,18 +158,27 @@ Examples:
         print(f"Error: Config file not found: {config_path}", file=sys.stderr)
         sys.exit(2)
     
+    if hours_path and not hours_path.exists():
+        print(f"Error: Hours history file not found: {hours_path}", file=sys.stderr)
+        sys.exit(2)
+    
     try:
         # Load configuration
         config = load_config(config_path)
         
         # Import engine
-        from secure20.engine import load_payroll_data, run_engine, write_exception_csv
+        from secure20.engine import load_payroll_data, load_hours_history, run_engine, write_exception_csv
         
         # Load payroll data
         payroll_data = load_payroll_data(payroll_path)
         
+        # Load hours history if provided
+        hours_data = None
+        if hours_path:
+            hours_data = load_hours_history(hours_path)
+        
         # Run engine with all rules
-        status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces = run_engine(payroll_data, config)
+        status, exit_code, all_findings, violation_count, potential_count, actual_violations, potential_hces = run_engine(payroll_data, config, hours_data)
         
         # Create timestamped output directory (includes milliseconds for uniqueness)
         now = datetime.now()

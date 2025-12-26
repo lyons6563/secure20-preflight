@@ -1,0 +1,14 @@
+employee_id,employee_name,pay_period_start,pay_period_end,gross_pay,ytd_gross_pay,age,catch_up_elected
+E301,Alice Thompson,2024-06-01,2024-06-14,3200,38400,28,false
+E302,Bob Martinez,2024-06-01,2024-06-14,3500,42000,32,false
+E303,Carol White,2024-06-01,2024-06-14,3100,37200,29,false
+E304,David Kim,2024-06-01,2024-06-14,3400,40800,31,false
+E305,Emma Davis,2024-06-01,2024-06-14,2800,33600,26,false
+E306,Frank Wilson,2024-06-01,2024-06-14,2900,34800,27,false
+E307,Grace Lee,2024-06-01,2024-06-14,3300,39600,30,false
+E308,Henry Brown,2024-06-01,2024-06-14,3000,36000,28,false
+E309,Iris Garcia,2024-06-01,2024-06-14,3150,37800,29,false
+E310,Jack Taylor,2024-06-01,2024-06-14,3250,39000,31,false
+E311,Karen Moore,2024-06-01,2024-06-14,3050,36600,28,false
+E312,Larry Anderson,2024-06-01,2024-06-14,2950,35400,27,false
+

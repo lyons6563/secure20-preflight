@@ -36,3 +36,10 @@ escalation_effective_month: 1  # Month (1-12) when escalation takes effect
 escalation_step: 0.01  # Annual escalation step (1%)
 escalation_max_rate: 0.10  # Maximum deferral rate after escalations (10%)
 
+# LTPT (Long-Term Part-Time) Eligibility Settings
+ltpt_enabled: false  # Enable LTPT eligibility detection (requires --hours CSV)
+ltpt_hours_threshold: 500  # Minimum hours per year to qualify
+ltpt_consecutive_years_required: 3  # Number of consecutive years required (2 or 3)
+ltpt_latest_year: 2024  # Latest year to evaluate (used to determine trailing years)
+ltpt_requires_deferral_absent: false  # If true, only flag employees without deferral
+

@@ -9,9 +9,9 @@ import sys
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from secure20.rules import roth_catchup, auto_enroll
+from secure20.rules import roth_catchup, auto_enroll, ltpt
 
 
 def _parse_decimal(value: str, field_name: str, row_num: int) -> Decimal:
@@ -132,6 +132,66 @@ def load_payroll_data(payroll_path: Path) -> List[Dict]:
         sys.exit(2)
 
 
+def load_hours_history(hours_path: Path) -> List[Dict]:
+    """
+    Load and validate hours history CSV file.
+    
+    Args:
+        hours_path: Path to hours history CSV file
+        
+    Returns:
+        List of dictionaries, each representing a hours history record
+        
+    Raises:
+        SystemExit(2): If CSV file cannot be read or is invalid
+    """
+    required_columns = ['employee_id', 'year', 'hours']
+    
+    try:
+        with open(hours_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            
+            # Check for required columns
+            if not reader.fieldnames:
+                print("Error: Hours history CSV file is empty or has no header row", file=sys.stderr)
+                sys.exit(2)
+            
+            missing_columns = [col for col in required_columns if col not in reader.fieldnames]
+            if missing_columns:
+                print(f"Error: Missing required hours history CSV columns: {', '.join(missing_columns)}", file=sys.stderr)
+                sys.exit(2)
+            
+            records = []
+            for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is row 1)
+                try:
+                    record = {
+                        'employee_id': str(row['employee_id']).strip(),
+                        'year': int(row['year']),
+                        'hours': _parse_decimal(row['hours'], 'hours', row_num),
+                    }
+                    
+                    # Validate non-negative hours
+                    if record['hours'] < 0:
+                        print(f"Error: Row {row_num}: hours must be non-negative", file=sys.stderr)
+                        sys.exit(2)
+                    
+                    records.append(record)
+                    
+                except (ValueError, KeyError) as e:
+                    print(f"Error: Row {row_num}: {e}", file=sys.stderr)
+                    sys.exit(2)
+            
+            if not records:
+                print("Error: Hours history CSV file contains no data rows", file=sys.stderr)
+                sys.exit(2)
+            
+            return records
+            
+    except IOError as e:
+        print(f"Error: Cannot read hours history file: {e}", file=sys.stderr)
+        sys.exit(2)
+
+
 def write_exception_csv(exceptions: List[Dict], output_path: Path) -> None:
     """
     Write exception records to CSV file.
@@ -170,13 +230,14 @@ def write_exception_csv(exceptions: List[Dict], output_path: Path) -> None:
         sys.exit(2)
 
 
-def run_engine(payroll_data: List[Dict], config: Dict) -> Tuple[str, int, List[Dict], int, int]:
+def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List[Dict]] = None) -> Tuple[str, int, List[Dict], int, int]:
     """
     Run the preflight engine with all rules.
     
     Args:
         payroll_data: List of payroll records
         config: Configuration dictionary
+        hours_data: Optional list of hours history records
         
     Returns:
         Tuple of (status, exit_code, all_findings, violation_count, potential_count)
@@ -202,11 +263,15 @@ def run_engine(payroll_data: List[Dict], config: Dict) -> Tuple[str, int, List[D
     escalation_misses = auto_enroll.check_escalation_miss(payroll_data, config)
     all_findings.extend(escalation_misses)
     
+    # Rule 4: LTPT eligibility check (YELLOW findings)
+    ltpt_findings = ltpt.check_ltpt_eligibility(payroll_data, hours_data, config)
+    all_findings.extend(ltpt_findings)
+    
     # Count actual violations (RED findings: ROTH_ONLY_CATCHUP_HCE, AUTO_ENROLL_MISS)
     actual_violations = [v for v in all_findings if v['violation_type'] in ['ROTH_ONLY_CATCHUP_HCE', 'AUTO_ENROLL_MISS']]
     violation_count = len(actual_violations)
-    # Count potential issues (YELLOW findings: POTENTIAL_HCE, AUTO_ENROLL_BELOW_DEFAULT, ESCALATION_POSSIBLE_MISS)
-    potential_count = len([v for v in all_findings if v['violation_type'] in ['POTENTIAL_HCE', 'AUTO_ENROLL_BELOW_DEFAULT', 'ESCALATION_POSSIBLE_MISS']])
+    # Count potential issues (YELLOW findings: POTENTIAL_HCE, AUTO_ENROLL_BELOW_DEFAULT, ESCALATION_POSSIBLE_MISS, LTPT_POSSIBLE_ELIGIBLE)
+    potential_count = len([v for v in all_findings if v['violation_type'] in ['POTENTIAL_HCE', 'AUTO_ENROLL_BELOW_DEFAULT', 'ESCALATION_POSSIBLE_MISS', 'LTPT_POSSIBLE_ELIGIBLE']])
     
     # Determine traffic-light status
     if violation_count > 0:
