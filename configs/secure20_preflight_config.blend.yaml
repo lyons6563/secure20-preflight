@@ -1,5 +1,5 @@
-# SECURE 2.0 Preflight Checker - Example Configuration
-# Copy this file and customize for your environment
+# SECURE 2.0 Preflight Checker - Blend Projection Configuration
+# Uses weighted blend of YTD and period-based projections
 
 # HCE Threshold Configuration
 hce_threshold:
@@ -11,7 +11,7 @@ catch_up:
   age_threshold: 50  # Minimum age for catch-up contributions
   roth_only_risk_year: 2024  # Year when Roth-only catch-up restriction begins
 
-# Annualization Settings
+# Annualization Settings (used by legacy projection method)
 annualization:
   method: "gross_or_ytd"  # Options: "gross", "ytd", "gross_or_ytd"
   # "gross_or_ytd": Use YTD if available, otherwise annualize gross pay
@@ -19,9 +19,7 @@ annualization:
   # "gross": Always annualize from gross pay period amount
 
 # Projection Method (for HCE threshold calculations)
-projection_method: "legacy"  # Options: "legacy", "ytd_annualize", "period_annualize", "blend"
-  # "legacy": Original behavior using annualization.method
-  # "ytd_annualize": (ytd_gross_pay / days_elapsed) * 365
-  # "period_annualize": gross_pay * periods_per_year (inferred from period length)
-  # "blend": Weighted combination of ytd_annualize and period_annualize
+projection_method: "blend"  # Weighted blend of YTD and period projections
+blend_weight_ytd: 0.7  # Weight for YTD-based projection (default: 0.7)
+blend_weight_period: 0.3  # Weight for period-based projection (default: 0.3)
 
