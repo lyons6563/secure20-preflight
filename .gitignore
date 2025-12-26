@@ -1,5 +1,15 @@
 # Runtime output artifacts
 preflight_outputs/
+# Local runtime folders (drop-folder mode)
+inbox/
+processed/
+failed/
+reference/
+
+# Local packaging / extraction scratch
+release/
+test_extract_*/
+test_demo_modes/
 
 # Data files (except committed test data)
 data/*
