@@ -244,7 +244,7 @@ def check_roth_only_catchup_hce(payroll_data: List[Dict], config: Dict) -> List[
                     'employee_name': record['employee_name'],
                     'violation_type': 'ROTH_ONLY_CATCHUP_HCE',
                     'violation_description': (
-                        f"HCE making Roth-only catch-up contributions. "
+                        f"HCE making Roth-only catch-up contributions (prohibited under SECURE 2.0). "
                         f"Projected annual compensation: ${projected_comp:,.2f}"
                     ),
                     'projected_annual_compensation': float(projected_comp),
@@ -499,8 +499,9 @@ Examples:
             status = "GREEN"
             exit_code = 0
         
-        # Create timestamped output directory
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Create timestamped output directory (includes milliseconds for uniqueness)
+        now = datetime.now()
+        timestamp = now.strftime('%Y%m%d_%H%M%S') + f"_{now.microsecond // 1000:03d}"
         output_dir = Path('preflight_outputs') / timestamp
         output_dir.mkdir(parents=True, exist_ok=True)
         

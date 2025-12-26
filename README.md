@@ -32,7 +32,7 @@ The tool outputs:
 
 - **GREEN**: Nothing to review. No violations and no potential risk flags.
 - **YELLOW**: Review recommended. Zero enforceable violations, but potential risk flags exist (e.g., `POTENTIAL_HCE`). The CSV may contain YELLOW findings even when there are 0 violations.
-- **RED**: Action required. At least one enforceable violation detected (e.g., `ROTH_ONLY_CATCHUP_HCE`).
+- **RED**: Action required. At least one enforceable violation detected. RED findings indicate HCEs making Roth-only catch-up contributions, which is prohibited under SECURE 2.0 (e.g., `ROTH_ONLY_CATCHUP_HCE`).
 
 ### Exit Codes
 
