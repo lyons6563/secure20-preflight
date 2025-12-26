@@ -25,7 +25,7 @@ python secure20_preflight.py --payroll inputs/secure20_payroll_demo.csv --config
 ### Output
 
 The tool outputs:
-- **Console summary**: Traffic-light status (GREEN/YELLOW/RED), violation count, potential issues count, top employee IDs (if applicable), and output file path
+- **Console summary**: Traffic-light status (GREEN/YELLOW/RED), RED Findings (for RED status) or violation count (for YELLOW/GREEN), potential issues count, top employee IDs (if applicable), and output file path
 - **Exception CSV**: Always created at `preflight_outputs/<timestamp>/secure20_preflight_exceptions.csv` with a `severity` column (RED or YELLOW)
 
 #### Traffic-Light Status

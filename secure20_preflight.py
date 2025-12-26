@@ -511,7 +511,10 @@ Examples:
         
         # Print results
         print(f"STATUS: {status}", file=sys.stdout)
-        print(f"Violations: {violation_count}", file=sys.stdout)
+        if status == "RED":
+            print(f"RED Findings: {violation_count}", file=sys.stdout)
+        else:
+            print(f"Violations: {violation_count}", file=sys.stdout)
         if potential_count > 0:
             print(f"Potential Issues: {potential_count}", file=sys.stdout)
         else:
