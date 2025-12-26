@@ -210,10 +210,10 @@ def _parse_date(value: str, field_name: str, row_num: int) -> date:
 
 def check_roth_only_catchup_hce(payroll_data: List[Dict], config: Dict) -> List[Dict]:
     """
-    Check 1: Identify HCEs making Roth-only catch-up contributions.
+    Check 1: Identify HCEs subject to Roth-only catch-up requirement.
     
     Rule: For the year specified in catch_up.roth_only_risk_year and beyond,
-    HCEs cannot make catch-up contributions exclusively to Roth accounts.
+    HCEs must make catch-up contributions as Roth-only (enforcement requirement).
     
     Args:
         payroll_data: List of payroll records
@@ -244,8 +244,8 @@ def check_roth_only_catchup_hce(payroll_data: List[Dict], config: Dict) -> List[
                     'employee_name': record['employee_name'],
                     'violation_type': 'ROTH_ONLY_CATCHUP_HCE',
                     'violation_description': (
-                        f"HCE making Roth-only catch-up contributions (prohibited under SECURE 2.0). "
-                        f"Projected annual compensation: ${projected_comp:,.2f}"
+                        f"Catch-up contributions must be Roth for this projected HCE under SECURE 2.0 (Roth-only requirement). "
+                        f"Review payroll enforcement. Projected annual compensation: ${projected_comp:,.2f}"
                     ),
                     'projected_annual_compensation': float(projected_comp),
                     'catch_up_amount': float(record['catch_up_contribution']),

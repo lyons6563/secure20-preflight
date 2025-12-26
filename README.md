@@ -32,7 +32,7 @@ The tool outputs:
 
 - **GREEN**: Nothing to review. No violations and no potential risk flags.
 - **YELLOW**: Review recommended. Zero enforceable violations, but potential risk flags exist (e.g., `POTENTIAL_HCE`). The CSV may contain YELLOW findings even when there are 0 violations.
-- **RED**: Action required. At least one enforceable violation detected. RED findings indicate HCEs making Roth-only catch-up contributions, which is prohibited under SECURE 2.0 (e.g., `ROTH_ONLY_CATCHUP_HCE`).
+- **RED**: Action required. Roth-only catch-up enforcement applies for at least one projected HCE. RED findings indicate projected HCEs for whom catch-up contributions must be Roth-only under SECURE 2.0 (e.g., `ROTH_ONLY_CATCHUP_HCE`). Note: This tool does not detect non-Roth catch-up violations; it flags HCEs subject to the Roth-only requirement for enforcement review.
 
 ### Exit Codes
 
