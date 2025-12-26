@@ -223,10 +223,11 @@ def check_escalation_miss(payroll_data: List[Dict], config: Dict) -> List[Dict]:
             finding = {
                 'employee_id': record['employee_id'],
                 'employee_name': record['employee_name'],
-                'violation_type': 'ESCALATION_MISS',
+                'violation_type': 'ESCALATION_POSSIBLE_MISS',
                 'violation_description': (
-                    f"Possible escalation miss: deferral_rate={deferral_rate:.1%} is below default={default_rate:.1%} "
-                    f"after escalation effective month ({escalation_effective_month}). Verify plan schedule."
+                    f"Possible escalation miss detected: deferral_rate={deferral_rate:.1%} is below default={default_rate:.1%} "
+                    f"after escalation effective month ({escalation_effective_month}). This may indicate an escalation issue; "
+                    f"please verify plan schedule and employee election history to confirm."
                 ),
                 'projected_annual_compensation': 0.0,
                 'catch_up_amount': 0.0,

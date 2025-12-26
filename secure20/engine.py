@@ -205,8 +205,8 @@ def run_engine(payroll_data: List[Dict], config: Dict) -> Tuple[str, int, List[D
     # Count actual violations (RED findings: ROTH_ONLY_CATCHUP_HCE, AUTO_ENROLL_MISS)
     actual_violations = [v for v in all_findings if v['violation_type'] in ['ROTH_ONLY_CATCHUP_HCE', 'AUTO_ENROLL_MISS']]
     violation_count = len(actual_violations)
-    # Count potential issues (YELLOW findings: POTENTIAL_HCE, AUTO_ENROLL_BELOW_DEFAULT, ESCALATION_MISS)
-    potential_count = len([v for v in all_findings if v['violation_type'] in ['POTENTIAL_HCE', 'AUTO_ENROLL_BELOW_DEFAULT', 'ESCALATION_MISS']])
+    # Count potential issues (YELLOW findings: POTENTIAL_HCE, AUTO_ENROLL_BELOW_DEFAULT, ESCALATION_POSSIBLE_MISS)
+    potential_count = len([v for v in all_findings if v['violation_type'] in ['POTENTIAL_HCE', 'AUTO_ENROLL_BELOW_DEFAULT', 'ESCALATION_POSSIBLE_MISS']])
     
     # Determine traffic-light status
     if violation_count > 0:
