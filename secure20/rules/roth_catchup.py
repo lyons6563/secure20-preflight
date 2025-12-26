@@ -33,6 +33,8 @@ def annualize_compensation(record: Dict, config: Dict) -> Tuple[Decimal, str]:
         return _annualize_period(record, config), 'period_annualize'
     elif projection_method == 'blend':
         return _annualize_blend(record, config), 'blend'
+    elif projection_method == 'conservative_max':
+        return _annualize_conservative_max(record, config), 'conservative_max'
     else:
         # Unknown method, fall back to legacy
         return _annualize_legacy(record, config), 'legacy'
@@ -120,13 +122,29 @@ def _annualize_period(record: Dict, config: Dict) -> Decimal:
 
 def _annualize_blend(record: Dict, config: Dict) -> Decimal:
     """Blend annualization: weighted combination of YTD and period methods"""
-    weight_ytd = Decimal(str(config.get('blend_weight_ytd', 0.7)))
-    weight_period = Decimal(str(config.get('blend_weight_period', 0.3)))
+    weight_ytd = Decimal(str(config.get('blend_weight_ytd', 0.85)))
+    weight_period = Decimal(str(config.get('blend_weight_period', 0.15)))
     
     ytd_proj = _annualize_ytd(record, config)
     period_proj = _annualize_period(record, config)
     
     return (weight_ytd * ytd_proj) + (weight_period * period_proj)
+
+
+def _annualize_conservative_max(record: Dict, config: Dict) -> Decimal:
+    """Conservative max annualization: max(ytd_annualize, period_annualize)"""
+    projected_ytd = _annualize_ytd(record, config)
+    projected_period = _annualize_period(record, config)
+    
+    return max(projected_ytd, projected_period)
+
+
+def _annualize_conservative_max(record: Dict, config: Dict) -> Decimal:
+    """Conservative max annualization: max(ytd_annualize, period_annualize)"""
+    projected_ytd = _annualize_ytd(record, config)
+    projected_period = _annualize_period(record, config)
+    
+    return max(projected_ytd, projected_period)
 
 
 def _annualize_from_gross(record: Dict) -> Decimal:
@@ -232,7 +250,7 @@ def check_potential_hce(payroll_data: List[Dict], config: Dict) -> List[Dict]:
         
         # Flag if projected compensation >= threshold
         if projected_comp >= threshold:
-            # Format projection method name for display
+            # Format projection method name for display (include for all non-legacy methods)
             method_display = proj_method.replace('_', ' ')
             if proj_method != 'legacy':
                 method_text = f" ({method_display} projection)"

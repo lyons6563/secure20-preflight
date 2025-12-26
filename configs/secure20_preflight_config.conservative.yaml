@@ -1,5 +1,5 @@
-# SECURE 2.0 Preflight Checker - Blend Projection Configuration
-# Uses weighted blend of YTD and period-based projections
+# SECURE 2.0 Preflight Checker - Conservative Max Projection Configuration
+# Uses max(ytd_annualize, period_annualize) to avoid missing borderline cases
 
 # HCE Threshold Configuration
 hce_threshold:
@@ -19,8 +19,7 @@ annualization:
   # "gross": Always annualize from gross pay period amount
 
 # Projection Method (for HCE threshold calculations)
-projection_method: "blend"  # Weighted blend of YTD and period projections
-# Note: Blend method can reduce flags compared to legacy/ytd methods
-blend_weight_ytd: 0.85  # Weight for YTD-based projection (default: 0.85)
-blend_weight_period: 0.15  # Weight for period-based projection (default: 0.15)
+projection_method: "conservative_max"  # max(ytd_annualize, period_annualize)
+  # Conservative approach that takes the maximum of YTD and period projections
+  # to avoid missing borderline HCE cases
 
