@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from secure20.rules import roth_catchup
+from secure20.rules import roth_catchup, auto_enroll
 
 
 def _parse_decimal(value: str, field_name: str, row_num: int) -> Decimal:
@@ -91,6 +91,14 @@ def load_payroll_data(payroll_path: Path) -> List[Dict]:
                     else:
                         record['catch_up_type'] = None
                     
+                    # Optional auto-enroll fields (added if present in CSV)
+                    if 'hire_date' in reader.fieldnames:
+                        record['hire_date'] = row.get('hire_date', '').strip()
+                    if 'deferral_rate' in reader.fieldnames:
+                        record['deferral_rate'] = row.get('deferral_rate', '').strip()
+                    if 'deferral_start_date' in reader.fieldnames:
+                        record['deferral_start_date'] = row.get('deferral_start_date', '').strip()
+                    
                     # Validate dates are in order
                     if record['pay_period_start'] > record['pay_period_end']:
                         print(f"Error: Row {row_num}: pay_period_start must be <= pay_period_end", file=sys.stderr)
@@ -152,7 +160,7 @@ def write_exception_csv(exceptions: List[Dict], output_path: Path) -> None:
             
             # Add severity to each exception
             for exc in exceptions:
-                if exc['violation_type'] == 'ROTH_ONLY_CATCHUP_HCE':
+                if exc['violation_type'] in ['ROTH_ONLY_CATCHUP_HCE', 'AUTO_ENROLL_MISS']:
                     exc['severity'] = 'RED'
                 else:
                     exc['severity'] = 'YELLOW'
@@ -184,10 +192,21 @@ def run_engine(payroll_data: List[Dict], config: Dict) -> Tuple[str, int, List[D
     potential_hces = roth_catchup.check_potential_hce(payroll_data, config)
     all_findings.extend(potential_hces)
     
-    # Count actual violations (exclude informational POTENTIAL_HCE)
-    actual_violations = [v for v in all_findings if v['violation_type'] == 'ROTH_ONLY_CATCHUP_HCE']
+    # Rule 3: Auto-enrollment and escalation checks
+    auto_enroll_misses = auto_enroll.check_auto_enroll_miss(payroll_data, config)
+    all_findings.extend(auto_enroll_misses)
+    
+    auto_enroll_below_default = auto_enroll.check_auto_enroll_below_default(payroll_data, config)
+    all_findings.extend(auto_enroll_below_default)
+    
+    escalation_misses = auto_enroll.check_escalation_miss(payroll_data, config)
+    all_findings.extend(escalation_misses)
+    
+    # Count actual violations (RED findings: ROTH_ONLY_CATCHUP_HCE, AUTO_ENROLL_MISS)
+    actual_violations = [v for v in all_findings if v['violation_type'] in ['ROTH_ONLY_CATCHUP_HCE', 'AUTO_ENROLL_MISS']]
     violation_count = len(actual_violations)
-    potential_count = len(potential_hces)
+    # Count potential issues (YELLOW findings: POTENTIAL_HCE, AUTO_ENROLL_BELOW_DEFAULT, ESCALATION_MISS)
+    potential_count = len([v for v in all_findings if v['violation_type'] in ['POTENTIAL_HCE', 'AUTO_ENROLL_BELOW_DEFAULT', 'ESCALATION_MISS']])
     
     # Determine traffic-light status
     if violation_count > 0:

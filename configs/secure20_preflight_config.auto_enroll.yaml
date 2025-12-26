@@ -1,5 +1,5 @@
-# SECURE 2.0 Preflight Checker - Example Configuration
-# Copy this file and customize for your environment
+# SECURE 2.0 Preflight Checker - Auto-Enrollment Configuration
+# Enables auto-enrollment and escalation checks
 
 # HCE Threshold Configuration
 hce_threshold:
@@ -19,20 +19,16 @@ annualization:
   # "gross": Always annualize from gross pay period amount
 
 # Projection Method (for HCE threshold calculations)
-projection_method: "legacy"  # Options: "legacy", "ytd_annualize", "period_annualize", "blend"
-  # "legacy": Original behavior using annualization.method
-  # "ytd_annualize": (ytd_gross_pay / days_elapsed) * 365
-  # "period_annualize": gross_pay * periods_per_year (inferred from period length)
-  # "blend": Weighted combination of ytd_annualize and period_annualize
+projection_method: "legacy"  # Options: "legacy", "ytd_annualize", "period_annualize", "blend", "conservative_max"
 
 # Auto-Enrollment Settings
-auto_enroll_enabled: false  # Enable auto-enrollment miss detection
-auto_enroll_wait_days: 0  # Days after hire before auto-enrollment eligibility
+auto_enroll_enabled: true  # Enable auto-enrollment miss detection
+auto_enroll_wait_days: 90  # Days after hire before auto-enrollment eligibility
 auto_enroll_default_rate: 0.03  # Default deferral rate (3%)
 
 # Escalation Settings
-escalation_enabled: false  # Enable escalation miss detection
-escalation_effective_month: 1  # Month (1-12) when escalation takes effect
+escalation_enabled: true  # Enable escalation miss detection
+escalation_effective_month: 1  # Month (1-12) when escalation takes effect (January)
 escalation_step: 0.01  # Annual escalation step (1%)
 escalation_max_rate: 0.10  # Maximum deferral rate after escalations (10%)
 
