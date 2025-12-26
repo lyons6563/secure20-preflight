@@ -1,45 +1,38 @@
-# SECURE 2.0 Preflight Checker - Example Configuration
-# Copy this file and customize for your environment
+# SECURE 2.0 Preflight Checker - LTPT 3-Year Configuration
+# Enables LTPT eligibility checks with 3 consecutive years requirement
 
 # HCE Threshold Configuration
 hce_threshold:
-  current_year: 2024  # Calendar year being analyzed
-  compensation_limit: 150000  # HCE compensation threshold (dollars)
+  current_year: 2024
+  compensation_limit: 150000
 
 # Catch-up Contribution Rules
 catch_up:
-  age_threshold: 50  # Minimum age for catch-up contributions
-  roth_only_risk_year: 2024  # Year when Roth-only catch-up restriction begins
+  age_threshold: 50
+  roth_only_risk_year: 2024
 
 # Annualization Settings
 annualization:
-  method: "gross_or_ytd"  # Options: "gross", "ytd", "gross_or_ytd"
-  # "gross_or_ytd": Use YTD if available, otherwise annualize gross pay
-  # "ytd": Always use YTD projection when available
-  # "gross": Always annualize from gross pay period amount
+  method: "gross_or_ytd"
 
-# Projection Method (for HCE threshold calculations)
-projection_method: "legacy"  # Options: "legacy", "ytd_annualize", "period_annualize", "blend"
-  # "legacy": Original behavior using annualization.method
-  # "ytd_annualize": (ytd_gross_pay / days_elapsed) * 365
-  # "period_annualize": gross_pay * periods_per_year (inferred from period length)
-  # "blend": Weighted combination of ytd_annualize and period_annualize
+# Projection Method
+projection_method: "legacy"
 
-# Auto-Enrollment Settings
-auto_enroll_enabled: false  # Enable auto-enrollment miss detection
-auto_enroll_wait_days: 0  # Days after hire before auto-enrollment eligibility
-auto_enroll_default_rate: 0.03  # Default deferral rate (3%)
+# Auto-Enrollment Settings (disabled)
+auto_enroll_enabled: false
+auto_enroll_wait_days: 0
+auto_enroll_default_rate: 0.03
 
-# Escalation Settings
-escalation_enabled: false  # Enable escalation miss detection
-escalation_effective_month: 1  # Month (1-12) when escalation takes effect
-escalation_step: 0.01  # Annual escalation step (1%)
-escalation_max_rate: 0.10  # Maximum deferral rate after escalations (10%)
+# Escalation Settings (disabled)
+escalation_enabled: false
+escalation_effective_month: 1
+escalation_step: 0.01
+escalation_max_rate: 0.10
 
 # LTPT (Long-Term Part-Time) Eligibility Settings
-ltpt_enabled: false  # Enable LTPT eligibility detection (requires --hours CSV)
+ltpt_enabled: true  # Enable LTPT eligibility detection
 ltpt_hours_threshold: 500  # Minimum hours per year to qualify
-ltpt_consecutive_years_required: 3  # Number of consecutive years required (2 or 3)
-ltpt_latest_year: 2024  # Latest year to evaluate (used to determine trailing years)
-ltpt_requires_deferral_absent: false  # If true, only flag employees without deferral
+ltpt_consecutive_years_required: 3  # Require 3 consecutive years
+ltpt_latest_year: 2024  # Evaluate trailing years ending at 2024
+ltpt_requires_deferral_absent: false  # Flag all eligible employees regardless of deferral status
 
