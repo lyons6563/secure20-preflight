@@ -14,6 +14,10 @@ from datetime import datetime
 import re
 import yaml
 
+# Demo mode selection: "catchup" | "auto_enroll" | "ltpt" | "full"
+# Controls which config file is used automatically in drop-folder mode
+DEMO_MODE = "catchup"  # default: catch-up checks only
+
 
 def find_latest_output_folder():
     """Find the most recently created preflight_outputs timestamp folder."""
@@ -69,13 +73,28 @@ def parse_preflight_output(output_text):
     return result
 
 
+def get_config_path(demo_mode: str) -> Path:
+    """Get config file path based on demo mode."""
+    config_map = {
+        'catchup': 'configs/secure20_preflight_config.example.yaml',
+        'auto_enroll': 'configs/secure20_preflight_config.auto_enroll.yaml',
+        'ltpt': 'configs/secure20_preflight_config.ltpt_3yr.yaml',
+        'full': 'configs/secure20_preflight_config.full.yaml'
+    }
+    
+    config_name = config_map.get(demo_mode.lower(), config_map['catchup'])
+    return Path(config_name)
+
+
 def process_file(csv_file: Path):
     """Process a single CSV file through the preflight checker."""
-    config_path = Path('configs/secure20_preflight_config.example.yaml')
+    # Select config based on DEMO_MODE
+    config_path = get_config_path(DEMO_MODE)
     HOURS_PATH = Path('reference/hours_history.csv')
     
     if not config_path.exists():
         print(f"Error: Config file not found: {config_path}", file=sys.stderr)
+        print(f"       DEMO_MODE is set to: {DEMO_MODE}", file=sys.stderr)
         return False
     
     # Check if LTPT is enabled in config
@@ -89,9 +108,10 @@ def process_file(csv_file: Path):
     except Exception as e:
         print(f"Warning: Could not read config file: {e}", file=sys.stderr)
     
-    # Check LTPT configuration
-    if ltpt_enabled and not hours_file_exists:
-        print("LTPT enabled but reference/hours_history.csv not found; skipping LTPT.", file=sys.stderr)
+    # Check LTPT configuration for ltpt and full modes
+    if DEMO_MODE.lower() in ['ltpt', 'full']:
+        if ltpt_enabled and not hours_file_exists:
+            print("LTPT enabled but reference/hours_history.csv not found; skipping LTPT.", file=sys.stderr)
     
     try:
         # Run secure20_preflight.py
@@ -178,10 +198,14 @@ def process_file(csv_file: Path):
 def watch_inbox():
     """Main watcher loop that monitors inbox/ for new CSV files."""
     inbox_path = Path('inbox')
+    processed_path = Path('processed')
+    failed_path = Path('failed')
     processed_files = set()
     
-    # Ensure inbox exists
+    # Ensure runtime folders exist
     inbox_path.mkdir(exist_ok=True)
+    processed_path.mkdir(exist_ok=True)
+    failed_path.mkdir(exist_ok=True)
     
     print("Watching inbox/ for new CSV files...")
     print("Press Ctrl+C to stop.\n")

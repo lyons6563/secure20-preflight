@@ -1,0 +1,38 @@
+# SECURE 2.0 Preflight Checker - Full Configuration
+# Enables all modules: catch-up, auto-enroll, and LTPT checks
+
+# HCE Threshold Configuration
+hce_threshold:
+  current_year: 2024
+  compensation_limit: 150000
+
+# Catch-up Contribution Rules
+catch_up:
+  age_threshold: 50
+  roth_only_risk_year: 2024
+
+# Annualization Settings
+annualization:
+  method: "gross_or_ytd"
+
+# Projection Method
+projection_method: "conservative_max"  # Conservative approach for HCE detection
+
+# Auto-Enrollment Settings
+auto_enroll_enabled: true  # Enable auto-enrollment checks
+auto_enroll_wait_days: 90  # Days after hire before auto-enrollment eligibility
+auto_enroll_default_rate: 0.03  # Default deferral rate (3%)
+
+# Escalation Settings
+escalation_enabled: true  # Enable escalation checks
+escalation_effective_month: 1  # Month (1-12) when escalation takes effect
+escalation_step: 0.01  # Annual escalation step (1%)
+escalation_max_rate: 0.10  # Maximum deferral rate after escalations (10%)
+
+# LTPT (Long-Term Part-Time) Eligibility Settings
+ltpt_enabled: true  # Enable LTPT eligibility detection (requires reference/hours_history.csv)
+ltpt_hours_threshold: 500  # Minimum hours per year to qualify
+ltpt_consecutive_years_required: 3  # Require 3 consecutive years
+ltpt_latest_year: 2024  # Evaluate trailing years ending at 2024
+ltpt_requires_deferral_absent: false  # Flag all eligible employees regardless of deferral status
+
