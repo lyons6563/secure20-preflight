@@ -9,10 +9,14 @@ import subprocess
 import sys
 import time
 import shutil
+import os
 from pathlib import Path
 from datetime import datetime
 import re
 import yaml
+import traceback
+import io
+from contextlib import redirect_stdout, redirect_stderr
 
 # Demo mode selection: "catchup" | "auto_enroll" | "ltpt" | "full"
 # Controls which config file is used automatically in drop-folder mode
@@ -88,6 +92,9 @@ def get_config_path(demo_mode: str) -> Path:
 
 def process_file(csv_file: Path):
     """Process a single CSV file through the preflight checker."""
+    # Detect frozen vs non-frozen
+    frozen = getattr(sys, "frozen", False)
+    
     # Select config based on DEMO_MODE
     config_path = get_config_path(DEMO_MODE)
     HOURS_PATH = Path('reference/hours_history.csv')
@@ -114,26 +121,69 @@ def process_file(csv_file: Path):
             print("LTPT enabled but reference/hours_history.csv not found; skipping LTPT.", file=sys.stderr)
     
     try:
-        # Run secure20_preflight.py
-        cmd = [
-            sys.executable,
-            'secure20_preflight.py',
-            '--payroll', str(csv_file),
-            '--config', str(config_path)
-        ]
-        
-        # Add --hours flag if hours file exists
-        if hours_file_exists:
-            cmd.extend(['--hours', str(HOURS_PATH)])
-        
-        # Note: config_path is passed via --config flag, which secure20_preflight.py will use
-        
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minute timeout
-        )
+        if frozen:
+            # EXE mode: run in-process
+            from secure20_preflight import main as preflight_main
+            
+            # Build argv list identical to CLI args
+            argv = [
+                'secure20_preflight.py',
+                '--payroll', str(csv_file),
+                '--config', str(config_path)
+            ]
+            
+            # Add --hours flag if hours file exists
+            if hours_file_exists:
+                argv.extend(['--hours', str(HOURS_PATH)])
+            
+            # Temporarily set sys.argv
+            old_argv = sys.argv
+            sys.argv = argv
+            
+            # Capture stdout and stderr
+            stdout_capture = io.StringIO()
+            stderr_capture = io.StringIO()
+            returncode = 2  # Default to error
+            
+            try:
+                with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                    preflight_main()
+                    returncode = 0  # Should not reach here (main() calls sys.exit), but just in case
+            except SystemExit as e:
+                # main() calls sys.exit(exit_code), which raises SystemExit
+                returncode = e.code if e.code is not None else 0
+            finally:
+                # Restore sys.argv
+                sys.argv = old_argv
+            
+            # Get captured output
+            output_text = stdout_capture.getvalue()
+            stderr_text = stderr_capture.getvalue()
+            
+            result = type('Result', (), {
+                'stdout': output_text,
+                'stderr': stderr_text,
+                'returncode': returncode
+            })()
+        else:
+            # Dev mode: use subprocess (keep existing behavior)
+            cmd = [
+                sys.executable,
+                'secure20_preflight.py',
+                '--payroll', str(csv_file),
+                '--config', str(config_path)
+            ]
+            
+            # Add --hours flag if hours file exists
+            if hours_file_exists:
+                cmd.extend(['--hours', str(HOURS_PATH)])
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout
+            )
         
         # Parse output
         output_text = result.stdout
@@ -159,46 +209,102 @@ def process_file(csv_file: Path):
                     f.write(f"\n--- Standard Error ---\n")
                     f.write(result.stderr)
         
-        # Move file based on exit code
+        # Move file based on exit code (with existence check)
         if result.returncode == 0:  # SAFE
-            dest = Path('processed') / csv_file.name
-            shutil.move(str(csv_file), str(dest))
-            print(f"Processed: {csv_file.name} -> processed/ (SAFE)")
+            if csv_file.exists():
+                dest = Path('processed') / csv_file.name
+                shutil.move(str(csv_file), str(dest))
+                print(f"Processed: {csv_file.name} -> processed/ (SAFE)")
+            else:
+                print(f"WARNING: {csv_file.name} no longer exists, skipping move to processed/")
             return True
         elif result.returncode == 2:  # NOT SAFE or error
             # Check if it's actually NOT SAFE (violations) or an error
             if parsed['status'] == 'NOT SAFE':
-                dest = Path('processed') / csv_file.name
-                shutil.move(str(csv_file), str(dest))
-                print(f"Processed: {csv_file.name} -> processed/ (NOT SAFE)")
+                if csv_file.exists():
+                    dest = Path('processed') / csv_file.name
+                    shutil.move(str(csv_file), str(dest))
+                    print(f"Processed: {csv_file.name} -> processed/ (NOT SAFE)")
+                else:
+                    print(f"WARNING: {csv_file.name} no longer exists, skipping move to processed/")
                 return True
             else:
                 # It's an error
-                dest = Path('failed') / csv_file.name
-                shutil.move(str(csv_file), str(dest))
-                print(f"Failed: {csv_file.name} -> failed/ (Error)")
+                if csv_file.exists():
+                    dest = Path('failed') / csv_file.name
+                    shutil.move(str(csv_file), str(dest))
+                    print(f"Failed: {csv_file.name} -> failed/ (Error)")
+                else:
+                    print(f"WARNING: {csv_file.name} no longer exists, skipping move to failed/")
                 return False
         else:
             # Unknown exit code, treat as error
-            dest = Path('failed') / csv_file.name
-            shutil.move(str(csv_file), str(dest))
-            print(f"Failed: {csv_file.name} -> failed/ (Unknown exit code: {result.returncode})")
+            if csv_file.exists():
+                dest = Path('failed') / csv_file.name
+                shutil.move(str(csv_file), str(dest))
+                print(f"Failed: {csv_file.name} -> failed/ (Unknown exit code: {result.returncode})")
+            else:
+                print(f"WARNING: {csv_file.name} no longer exists, skipping move to failed/")
             return False
             
     except subprocess.TimeoutExpired:
-        dest = Path('failed') / csv_file.name
-        shutil.move(str(csv_file), str(dest))
-        print(f"Failed: {csv_file.name} -> failed/ (Timeout)")
+        if csv_file.exists():
+            dest = Path('failed') / csv_file.name
+            shutil.move(str(csv_file), str(dest))
+            print(f"Failed: {csv_file.name} -> failed/ (Timeout)")
+        else:
+            print(f"WARNING: {csv_file.name} no longer exists, skipping move to failed/")
         return False
     except Exception as e:
-        dest = Path('failed') / csv_file.name
-        shutil.move(str(csv_file), str(dest))
-        print(f"Failed: {csv_file.name} -> failed/ (Exception: {e})")
+        if csv_file.exists():
+            dest = Path('failed') / csv_file.name
+            shutil.move(str(csv_file), str(dest))
+            print(f"Failed: {csv_file.name} -> failed/ (Exception: {e})")
+        else:
+            print(f"WARNING: {csv_file.name} no longer exists, skipping move to failed/")
         return False
+
+
+def wait_for_file_stable(file_path: Path, max_wait: float = 30.0) -> bool:
+    """Wait for file size to stabilize (2 checks, 0.5s apart, max 30s)."""
+    if not file_path.exists():
+        return False
+    
+    start_time = time.time()
+    
+    # First check
+    try:
+        prev_size = file_path.stat().st_size
+    except (OSError, FileNotFoundError):
+        return False
+    
+    # Wait 0.5s and check again
+    while (time.time() - start_time) < max_wait:
+        time.sleep(0.5)
+        if not file_path.exists():
+            return False
+        try:
+            current_size = file_path.stat().st_size
+            if current_size == prev_size:
+                return True  # Size stabilized (2 checks match)
+            prev_size = current_size
+        except (OSError, FileNotFoundError):
+            return False
+    
+    return False  # Timeout reached
 
 
 def watch_inbox():
     """Main watcher loop that monitors inbox/ for new CSV files."""
+    # Determine base directory: EXE folder when frozen, else script folder
+    if getattr(sys, 'frozen', False):
+        base_dir = Path(sys.executable).parent
+    else:
+        base_dir = Path(__file__).parent
+    
+    # Change to base directory so relative paths in process_file work correctly
+    os.chdir(base_dir)
+    
     inbox_path = Path('inbox')
     processed_path = Path('processed')
     failed_path = Path('failed')
@@ -214,7 +320,7 @@ def watch_inbox():
     
     try:
         while True:
-            # Check for new CSV files
+            # Poll every 1s: scan inbox root for *.csv
             csv_files = list(inbox_path.glob('*.csv'))
             
             for csv_file in csv_files:
@@ -222,12 +328,37 @@ def watch_inbox():
                 if csv_file.name in processed_files:
                     continue
                 
-                print(f"Found new file: {csv_file.name}")
-                process_file(csv_file)
-                processed_files.add(csv_file.name)
+                # Wait for file size to stabilize
+                if not wait_for_file_stable(csv_file):
+                    print(f"WARNING: {csv_file.name} did not stabilize within timeout, processing anyway...")
+                
+                # Process file in try/except
+                file_name = csv_file.name
+                file_stem = csv_file.stem
+                try:
+                    success = process_file(csv_file)
+                    if success:
+                        print(f"PROCESSED: {file_name}")
+                    else:
+                        print(f"FAILED: {file_name}")
+                    processed_files.add(file_name)
+                except Exception as e:
+                    # On exception: move CSV to failed/ and write error file
+                    try:
+                        if csv_file.exists():
+                            dest = failed_path / file_name
+                            shutil.move(str(csv_file), str(dest))
+                        error_file = failed_path / f"{file_stem}__error.txt"
+                        with open(error_file, 'w', encoding='utf-8') as f:
+                            f.write(f"Exception processing {file_name}:\n\n")
+                            f.write(traceback.format_exc())
+                        print(f"FAILED: {file_name}")
+                        processed_files.add(file_name)
+                    except Exception as move_error:
+                        print(f"ERROR: Failed to move {file_name} to failed/: {move_error}")
             
-            # Sleep for 2 seconds before checking again
-            time.sleep(2)
+            # Sleep for 1 second before checking again
+            time.sleep(1)
             
     except KeyboardInterrupt:
         print("\n\nWatcher stopped by user.")
