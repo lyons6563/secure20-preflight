@@ -1,12 +1,8 @@
-sstreamlit
-pandas
-numpy
-python-dateutil
-pytz
-openpyxl
-PyYAML
-altair
-requests
-watchdog
+# Direct dependencies for SECURE 2.0 Preflight Checker
+# The engine uses only stdlib + PyYAML; no pandas/numpy required.
 
+# Config parsing
+PyYAML>=6.0
 
+# Testing
+pytest>=8.0.0

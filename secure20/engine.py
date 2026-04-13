@@ -239,9 +239,10 @@ def run_engine(payroll_data: List[Dict], config: Dict, hours_data: Optional[List
         config: Configuration dictionary
         hours_data: Optional list of hours history records
         config_path: Optional path to config file (for diagnostics)
-        
+
     Returns:
-        Tuple of (status, exit_code, all_findings, violation_count, potential_count, diagnostics)
+        Tuple of (status, exit_code, all_findings, violation_count, potential_count,
+                  actual_violations, potential_hces, diagnostics)
     """
     # Initialize diagnostics
     diagnostics = {

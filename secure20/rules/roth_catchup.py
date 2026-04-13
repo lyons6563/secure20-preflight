@@ -135,15 +135,7 @@ def _annualize_conservative_max(record: Dict, config: Dict) -> Decimal:
     """Conservative max annualization: max(ytd_annualize, period_annualize)"""
     projected_ytd = _annualize_ytd(record, config)
     projected_period = _annualize_period(record, config)
-    
-    return max(projected_ytd, projected_period)
 
-
-def _annualize_conservative_max(record: Dict, config: Dict) -> Decimal:
-    """Conservative max annualization: max(ytd_annualize, period_annualize)"""
-    projected_ytd = _annualize_ytd(record, config)
-    projected_period = _annualize_period(record, config)
-    
     return max(projected_ytd, projected_period)
 
 
